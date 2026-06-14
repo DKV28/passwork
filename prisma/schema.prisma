@@ -1,0 +1,76 @@
+// Passwork — zero-knowledge password manager.
+// The server stores only ciphertext, salts, IVs and an auth verifier.
+// All encryption/decryption happens in the browser (see src/lib/crypto.ts).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String   @id @default(cuid())
+  email         String   @unique
+  // base64, 16 random bytes — used to derive the auth verifier in the browser.
+  authSalt      String
+  // base64, 16 random bytes — used to derive the AES-GCM encryption key (never leaves the browser).
+  encSalt       String
+  // argon2id hash of the client-derived auth verifier. Defense-in-depth: a DB leak
+  // still does not reveal a value usable to derive the encryption key.
+  serverHash    String
+  // Stored so the PBKDF2 cost can be raised over time without breaking old vaults.
+  kdfIterations Int      @default(600000)
+  createdAt     DateTime @default(now())
+
+  entries VaultEntry[]
+}
+
+model VaultEntry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Plaintext metadata (not secret) — kept searchable and used for reminders.
+  label String
+  url   String?
+
+  // MVP: username stored as plaintext; password & notes are always encrypted.
+  username String?
+
+  // AES-GCM ciphertext + IV (base64). The server treats these as opaque strings.
+  passwordCipher String
+  passwordIv     String
+  notesCipher    String?
+  notesIv        String?
+
+  // Reminder / rotation metadata (dates are not secret -> server can compute "due").
+  lastChangedAt       DateTime  @default(now())
+  rotationDays        Int?
+  nextReminderAt      DateTime?
+  reminderDismissedAt DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  history PasswordHistory[]
+
+  @@index([userId])
+}
+
+model PasswordHistory {
+  id      String     @id @default(cuid())
+  entryId String
+  entry   VaultEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  // The OLD password value that was replaced (AES-GCM ciphertext + IV, base64).
+  passwordCipher String
+  passwordIv     String
+  // When this old password was replaced by a newer one.
+  changedAt      DateTime @default(now())
+  createdAt      DateTime @default(now())
+
+  @@index([entryId])
+}
