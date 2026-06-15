@@ -34,8 +34,15 @@ const sql = execSync(
 
 const statements = sql
   .split(";")
-  .map((s) => s.trim())
-  .filter((s) => s && !s.startsWith("--"));
+  // Drop comment lines (e.g. "-- CreateTable") inside each statement, then trim.
+  .map((s) =>
+    s
+      .split("\n")
+      .filter((line) => !line.trim().startsWith("--"))
+      .join("\n")
+      .trim(),
+  )
+  .filter((s) => s.length > 0);
 
 const client = createClient({ url, authToken });
 console.log(`→ Applying ${statements.length} statement(s) to Turso …`);
