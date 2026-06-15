@@ -2,7 +2,6 @@
 
 import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import Link from "next/link";
 import { useVault } from "@/components/VaultProvider";
 import {
   unlockWithPin,
@@ -23,7 +22,6 @@ function PinForm() {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // If there's no PIN on this device, fall back to the master-password unlock.
   useEffect(() => {
     if (!hasPinSetup()) router.replace(`/unlock?next=${encodeURIComponent(next)}`);
   }, [router, next]);
@@ -48,7 +46,6 @@ function PinForm() {
   function onChange(raw: string) {
     const digits = raw.replace(/\D/g, "").slice(0, 12);
     setPin(digits);
-    // Auto-submit once a plausible PIN length is reached.
     if (digits.length >= MIN_PIN_LEN) submit(digits);
   }
 
@@ -57,47 +54,80 @@ function PinForm() {
     router.replace(`/unlock?next=${encodeURIComponent(next)}`);
   }
 
-  return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <h1 className="mb-1 text-2xl font-bold">Nhập mã PIN</h1>
-      <p className="mb-6 text-sm text-[var(--text-muted)]">
-        Nhập mã PIN để mở khóa kho trên thiết bị này.
-      </p>
+  const failCount = getPinFailCount();
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          submit(pin);
-        }}
-        className="card space-y-4"
-      >
-        <div>
-          <label className="label" htmlFor="pin">Mã PIN</label>
-          <input
-            id="pin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="off"
-            autoFocus
-            className="input tracking-[0.5em] text-center text-lg"
-            value={pin}
-            disabled={busy || lockedOut}
-            onChange={(e) => onChange(e.target.value)}
-            placeholder="••••••"
-          />
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="mb-8 text-center">
+        <div
+          className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-white"
+          style={{ background: "var(--brand)", boxShadow: "0 4px 14px color-mix(in srgb, var(--brand) 40%, transparent)" }}
+        >
+          P
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>
+          Nhập mã PIN
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>
+          Nhập PIN để mở khóa kho trên thiết bị này.
+        </p>
+      </div>
+
+      <div className="w-full max-w-xs">
+        <div className="card">
+          <form
+            onSubmit={(e) => { e.preventDefault(); submit(pin); }}
+            className="space-y-4"
+          >
+            <div>
+              <label className="label" htmlFor="pin">Mã PIN</label>
+              <input
+                id="pin"
+                type="password"
+                inputMode="numeric"
+                autoComplete="off"
+                autoFocus
+                className="input text-center text-xl tracking-[0.6em]"
+                value={pin}
+                disabled={busy || lockedOut}
+                onChange={(e) => onChange(e.target.value)}
+                placeholder="••••••"
+              />
+            </div>
+
+            {lockedOut ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-700 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+                PIN đã bị khóa sau {MAX_FAILS} lần sai. Hãy đăng nhập bằng master password.
+              </div>
+            ) : error ? (
+              <div className="rounded-xl border border-red-200 bg-red-50 px-3 py-2.5 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+                {error}
+                {failCount > 0 && !lockedOut && (
+                  <span className="block mt-0.5 text-xs opacity-70">
+                    Còn {MAX_FAILS - failCount} lần thử.
+                  </span>
+                )}
+              </div>
+            ) : null}
+
+            <button type="submit" className="btn-primary w-full py-2.5" disabled={busy || lockedOut}>
+              {busy ? "Đang mở khóa…" : "Mở khóa"}
+            </button>
+          </form>
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
-
-        <button type="submit" className="btn-primary w-full" disabled={busy || lockedOut}>
-          {busy ? "Đang mở khóa…" : "Mở khóa"}
+        <button
+          onClick={onForgot}
+          className="mt-4 w-full text-center text-sm"
+          style={{ color: "var(--text-muted)" }}
+        >
+          Quên PIN?{" "}
+          <span style={{ color: "var(--brand)" }} className="font-semibold">
+            Đăng nhập bằng master password
+          </span>
         </button>
-      </form>
-
-      <button onClick={onForgot} className="mt-4 text-center text-sm text-brand">
-        Quên PIN? Đăng nhập bằng master password
-      </button>
-    </main>
+      </div>
+    </div>
   );
 }
 

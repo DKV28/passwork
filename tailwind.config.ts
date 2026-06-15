@@ -14,6 +14,13 @@ const config: Config = {
           dark: "#4338ca",
         },
       },
+      borderRadius: {
+        "2xl": "1rem",
+        "3xl": "1.25rem",
+      },
+      boxShadow: {
+        soft: "0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06)",
+      },
     },
   },
   plugins: [],
