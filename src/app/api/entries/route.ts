@@ -44,21 +44,28 @@ export async function POST(request: Request) {
   const lastChangedAt = new Date();
   const rotationDays = body.rotationDays ?? null;
 
-  const entry = await prisma.vaultEntry.create({
-    data: {
-      userId: auth.userId,
-      label,
-      url: body.url?.trim() || null,
-      username: body.username?.trim() || null,
-      passwordCipher: body.passwordCipher,
-      passwordIv: body.passwordIv,
-      notesCipher: body.notesCipher ?? null,
-      notesIv: body.notesIv ?? null,
-      lastChangedAt,
-      rotationDays,
-      nextReminderAt: computeNextReminder(lastChangedAt, rotationDays),
-    },
-  });
+  let entry;
+  try {
+    entry = await prisma.vaultEntry.create({
+      data: {
+        userId: auth.userId,
+        label,
+        url: body.url?.trim() || null,
+        username: body.username?.trim() || null,
+        passwordCipher: body.passwordCipher,
+        passwordIv: body.passwordIv,
+        notesCipher: body.notesCipher ?? null,
+        notesIv: body.notesIv ?? null,
+        lastChangedAt,
+        rotationDays,
+        nextReminderAt: computeNextReminder(lastChangedAt, rotationDays),
+      },
+    });
+  } catch (err) {
+    console.error("[POST /api/entries]", err);
+    const message = err instanceof Error ? err.message : "Database error";
+    return NextResponse.json({ error: message }, { status: 500 });
+  }
 
   return NextResponse.json({ entry });
 }
