@@ -4,62 +4,113 @@
 
 :root {
   color-scheme: light;
-  --bg: #f8fafc; /* slate-50 */
+  --bg: #f5f5f7;
   --surface: #ffffff;
-  --surface-muted: #f1f5f9; /* slate-100 */
-  --border: #e2e8f0; /* slate-200 */
-  --text: #0f172a; /* slate-900 */
-  --text-muted: #64748b; /* slate-500 */
+  --surface-muted: #f5f5f7;
+  --surface-elevated: #ffffff;
+  --border: #e8e8ed;
+  --border-subtle: #f0f0f5;
+  --text: #1d1d1f;
+  --text-muted: #6e6e73;
+  --text-faint: #aeaeb2;
+  --brand: #4f46e5;
+  --brand-dark: #4338ca;
+  --brand-light: #ede9fe;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.08), 0 1px 2px -1px rgb(0 0 0 / 0.06);
+  --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.08), 0 2px 4px -1px rgb(0 0 0 / 0.04);
 }
 
 .dark {
   color-scheme: dark;
-  --bg: #0f172a; /* slate-900 */
-  --surface: #1e293b; /* slate-800 */
-  --surface-muted: #334155; /* slate-700 */
-  --border: #334155; /* slate-700 */
-  --text: #f1f5f9; /* slate-100 */
-  --text-muted: #94a3b8; /* slate-400 */
+  --bg: #111113;
+  --surface: #1c1c1e;
+  --surface-muted: #2c2c2e;
+  --surface-elevated: #242426;
+  --border: #2c2c2e;
+  --border-subtle: #222224;
+  --text: #f5f5f7;
+  --text-muted: #98989d;
+  --text-faint: #636366;
+  --brand: #818cf8;
+  --brand-dark: #6366f1;
+  --brand-light: #1e1b4b;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
+  --shadow: 0 1px 3px 0 rgb(0 0 0 / 0.4), 0 1px 2px -1px rgb(0 0 0 / 0.3);
+  --shadow-md: 0 4px 12px 0 rgb(0 0 0 / 0.5), 0 2px 4px -1px rgb(0 0 0 / 0.3);
+}
+
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 body {
   background-color: var(--bg);
   color: var(--text);
-  @apply antialiased;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center rounded-xl px-4 py-2 text-sm font-semibold transition-all duration-150 disabled:cursor-not-allowed disabled:opacity-40 select-none;
   }
   .btn-primary {
-    @apply btn bg-brand text-white hover:bg-brand-dark;
+    @apply btn text-white;
+    background-color: var(--brand);
+    box-shadow: 0 1px 2px rgb(0 0 0 / 0.15), inset 0 1px 0 rgb(255 255 255 / 0.1);
+  }
+  .btn-primary:hover:not(:disabled) {
+    background-color: var(--brand-dark);
+    box-shadow: 0 2px 6px rgb(0 0 0 / 0.2), inset 0 1px 0 rgb(255 255 255 / 0.1);
+    transform: translateY(-0.5px);
+  }
+  .btn-primary:active:not(:disabled) {
+    transform: translateY(0);
   }
   .btn-secondary {
-    @apply btn border;
+    @apply btn border text-sm;
     background-color: var(--surface);
     border-color: var(--border);
     color: var(--text);
+    box-shadow: var(--shadow-sm);
   }
-  .btn-secondary:hover {
+  .btn-secondary:hover:not(:disabled) {
     background-color: var(--surface-muted);
   }
   .btn-danger {
-    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/40;
+    @apply btn border text-red-600 dark:text-red-400;
+    background-color: var(--surface);
+    border-color: var(--border);
+    box-shadow: var(--shadow-sm);
+  }
+  .btn-danger:hover:not(:disabled) {
+    @apply bg-red-50 dark:bg-red-950/30;
   }
   .input {
-    @apply w-full rounded-lg border px-3 py-2 text-sm shadow-sm outline-none transition-colors duration-150 focus:border-brand focus:ring-2 focus:ring-brand/30;
+    @apply w-full rounded-xl border px-3.5 py-2.5 text-sm outline-none transition-all duration-150;
     background-color: var(--surface);
     border-color: var(--border);
     color: var(--text);
+    box-shadow: var(--shadow-sm);
+  }
+  .input::placeholder {
+    color: var(--text-faint);
+  }
+  .input:focus {
+    border-color: var(--brand);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
   }
   .label {
-    @apply mb-1 block text-sm font-medium;
+    @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider;
     color: var(--text-muted);
   }
   .card {
-    @apply rounded-xl border p-5 shadow-sm;
+    @apply rounded-2xl border p-6;
     background-color: var(--surface);
     border-color: var(--border);
+    box-shadow: var(--shadow);
   }
 }

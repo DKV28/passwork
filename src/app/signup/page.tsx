@@ -13,6 +13,26 @@ import {
 } from "@/lib/crypto";
 import { apiSignup } from "@/lib/api";
 
+function AuthShell({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
+  return (
+    <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
+      <div className="mb-8 text-center">
+        <div
+          className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-bold text-white"
+          style={{ background: "var(--brand)", boxShadow: "0 4px 14px color-mix(in srgb, var(--brand) 40%, transparent)" }}
+        >
+          P
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight" style={{ color: "var(--text)" }}>{title}</h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-muted)" }}>{subtitle}</p>
+      </div>
+      <div className="w-full max-w-sm">
+        <div className="card">{children}</div>
+      </div>
+    </div>
+  );
+}
+
 export default function SignupPage() {
   const router = useRouter();
   const { unlock } = useVault();
@@ -29,7 +49,7 @@ export default function SignupPage() {
     e.preventDefault();
     setError(null);
     if (pw.length < 8) return setError("Master password nên có ít nhất 8 ký tự.");
-    if (pw !== confirm) return setError("Hai lần nhập master password không khớp.");
+    if (pw !== confirm) return setError("Hai lần nhập không khớp.");
 
     setBusy(true);
     try {
@@ -38,20 +58,12 @@ export default function SignupPage() {
       const iterations = DEFAULT_KDF_ITERATIONS;
       const mail = email.trim().toLowerCase();
 
-      // Derive locally — the master password never leaves this device.
       const [authHash, encKey] = await Promise.all([
         deriveAuthHash(pw, authSalt, iterations),
         deriveEncKey(pw, encSalt, iterations),
       ]);
 
-      await apiSignup({
-        email: mail,
-        authSalt,
-        encSalt,
-        authHash,
-        kdfIterations: iterations,
-      });
-
+      await apiSignup({ email: mail, authSalt, encSalt, authHash, kdfIterations: iterations });
       unlock(encKey, mail);
       creds.current = { mail, pw, encSalt, iterations };
       setOfferPin(true);
@@ -65,58 +77,66 @@ export default function SignupPage() {
   if (offerPin && creds.current) {
     const c = creds.current;
     return (
-      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-        <h1 className="mb-1 text-2xl font-bold">Tạo kho thành công 🔐</h1>
-        <p className="mb-6 text-sm text-[var(--text-muted)]">Thiết lập PIN để lần sau mở khóa nhanh hơn.</p>
+      <AuthShell title="Kho đã tạo!" subtitle="Thiết lập PIN để mở khóa nhanh hơn ở lần sau.">
         <PinSetupPrompt
           email={c.mail}
           deriveExtractableKey={() => deriveEncKey(c.pw, c.encSalt, c.iterations, true)}
           onDone={() => router.push("/dashboard")}
           onSkip={() => router.push("/dashboard")}
         />
-      </main>
+      </AuthShell>
     );
   }
 
   return (
-    <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
-      <h1 className="mb-1 text-2xl font-bold">Tạo kho mật khẩu 🔐</h1>
-      <p className="mb-6 text-sm text-[var(--text-muted)]">
-        Đặt một <strong>master password</strong> — đây là chìa khóa giải mã toàn bộ kho.
-      </p>
-
-      <form onSubmit={onSubmit} className="card space-y-4">
+    <AuthShell
+      title="Tạo kho mật khẩu"
+      subtitle="Master password là chìa khóa duy nhất giải mã kho của bạn."
+    >
+      <form onSubmit={onSubmit} className="space-y-4">
         <div>
           <label className="label" htmlFor="email">Email</label>
           <input id="email" type="email" required className="input" value={email}
-            onChange={(e) => setEmail(e.target.value)} autoComplete="username" />
+            onChange={(e) => setEmail(e.target.value)} autoComplete="username"
+            placeholder="you@example.com" />
         </div>
         <div>
           <label className="label" htmlFor="pw">Master password</label>
           <input id="pw" type="password" required className="input" value={pw}
-            onChange={(e) => setPw(e.target.value)} autoComplete="new-password" />
+            onChange={(e) => setPw(e.target.value)} autoComplete="new-password"
+            placeholder="••••••••••••" />
         </div>
         <div>
-          <label className="label" htmlFor="confirm">Nhập lại master password</label>
+          <label className="label" htmlFor="confirm">Nhập lại</label>
           <input id="confirm" type="password" required className="input" value={confirm}
-            onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password" />
+            onChange={(e) => setConfirm(e.target.value)} autoComplete="new-password"
+            placeholder="••••••••••••" />
         </div>
 
-        <div className="rounded-lg bg-amber-50 p-3 text-xs text-amber-800">
-          ⚠️ <strong>Quan trọng:</strong> Master password không được lưu ở đâu cả. Nếu bạn quên nó,
-          toàn bộ kho sẽ <strong>không thể khôi phục</strong>. Hãy ghi nhớ thật kỹ.
+        <div
+          className="rounded-xl border px-3.5 py-3 text-xs leading-relaxed"
+          style={{ borderColor: "var(--border)", background: "var(--surface-muted)", color: "var(--text-muted)" }}
+        >
+          Nếu quên master password, kho sẽ <strong style={{ color: "var(--text)" }}>không thể khôi phục</strong>. Hãy ghi nhớ thật kỹ.
         </div>
 
-        {error && <p className="text-sm text-red-600">{error}</p>}
+        {error && (
+          <p className="rounded-xl border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-600 dark:border-red-900/40 dark:bg-red-950/30 dark:text-red-400">
+            {error}
+          </p>
+        )}
 
-        <button type="submit" className="btn-primary w-full" disabled={busy}>
+        <button type="submit" className="btn-primary w-full py-2.5" disabled={busy}>
           {busy ? "Đang tạo…" : "Tạo kho"}
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
-        Đã có kho? <Link href="/unlock" className="font-medium text-brand">Mở khóa</Link>
+      <p className="mt-5 text-center text-sm" style={{ color: "var(--text-muted)" }}>
+        Đã có kho?{" "}
+        <Link href="/unlock" className="font-semibold" style={{ color: "var(--brand)" }}>
+          Mở khóa
+        </Link>
       </p>
-    </main>
+    </AuthShell>
   );
 }
