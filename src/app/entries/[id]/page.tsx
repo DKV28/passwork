@@ -129,7 +129,7 @@ export default function EntryDetailPage({ params }: { params: Promise<{ id: stri
         <Link href="/dashboard" className="text-sm text-brand">← Quay lại</Link>
 
         {loading ? (
-          <p className="mt-4 text-sm text-slate-500">Đang giải mã…</p>
+          <p className="mt-4 text-sm text-[var(--text-muted)]">Đang giải mã…</p>
         ) : error && !entry ? (
           <p className="mt-4 text-sm text-red-600">{error}</p>
         ) : entry ? (
@@ -169,14 +169,14 @@ export default function EntryDetailPage({ params }: { params: Promise<{ id: stri
                   onChange={(e) => setNotes(e.target.value)} />
               </div>
 
-              <div className="rounded-lg bg-slate-50 p-3">
+              <div className="rounded-lg bg-[var(--surface-muted)] p-3">
                 <label className="flex items-center gap-2 text-sm font-medium">
                   <input type="checkbox" checked={rotationOn}
                     onChange={(e) => setRotationOn(e.target.checked)} />
                   Nhắc đổi mật khẩu định kỳ
                 </label>
                 {rotationOn && (
-                  <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+                  <div className="mt-2 flex items-center gap-2 text-sm text-[var(--text-muted)]">
                     <span>Mỗi</span>
                     <input type="number" min={1} className="input w-24" value={rotationDays}
                       onChange={(e) => setRotationDays(Number(e.target.value))} />

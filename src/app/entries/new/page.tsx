@@ -89,14 +89,14 @@ export default function NewEntryPage() {
               onChange={(e) => setNotes(e.target.value)} />
           </div>
 
-          <div className="rounded-lg bg-slate-50 p-3">
+          <div className="rounded-lg bg-[var(--surface-muted)] p-3">
             <label className="flex items-center gap-2 text-sm font-medium">
               <input type="checkbox" checked={rotationOn}
                 onChange={(e) => setRotationOn(e.target.checked)} />
               Nhắc tôi đổi mật khẩu định kỳ
             </label>
             {rotationOn && (
-              <div className="mt-2 flex items-center gap-2 text-sm text-slate-600">
+              <div className="mt-2 flex items-center gap-2 text-sm text-[var(--text-muted)]">
                 <span>Mỗi</span>
                 <input type="number" min={1} className="input w-24" value={rotationDays}
                   onChange={(e) => setRotationDays(Number(e.target.value))} />

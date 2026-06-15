@@ -5,6 +5,8 @@ import {
   deriveAuthHash,
   encrypt,
   decrypt,
+  wrapKey,
+  unwrapKey,
   generatePassword,
   base64ToBytes,
   bytesToBase64,
@@ -94,6 +96,43 @@ describe("tamper detection", () => {
     const tampered = bytesToBase64(bytes);
 
     await expect(decrypt(tampered, enc.iv, key)).rejects.toThrow();
+  });
+});
+
+describe("key wrapping (PIN unlock)", () => {
+  it("unwraps with the right PIN-key and still decrypts existing data", async () => {
+    const encSalt = generateSalt();
+    // The key to wrap must be extractable.
+    const encKey = await deriveEncKey(MASTER, encSalt, FAST, true);
+    const enc = await encrypt("my-secret", encKey);
+
+    const pinSalt = generateSalt();
+    const wrappingKey = await deriveEncKey("123456", pinSalt, FAST);
+    const wrapped = await wrapKey(encKey, wrappingKey);
+    expect(wrapped.cipher).not.toContain("my-secret");
+
+    const recovered = await unwrapKey(wrapped, wrappingKey);
+    const dec = await decrypt(enc.cipher, enc.iv, recovered);
+    expect(dec).toBe("my-secret");
+  });
+
+  it("fails to unwrap with the wrong PIN", async () => {
+    const encSalt = generateSalt();
+    const encKey = await deriveEncKey(MASTER, encSalt, FAST, true);
+
+    const pinSalt = generateSalt();
+    const right = await deriveEncKey("123456", pinSalt, FAST);
+    const wrong = await deriveEncKey("000000", pinSalt, FAST);
+
+    const wrapped = await wrapKey(encKey, right);
+    await expect(unwrapKey(wrapped, wrong)).rejects.toThrow();
+  });
+
+  it("cannot wrap a non-extractable key", async () => {
+    const encSalt = generateSalt();
+    const nonExtractable = await deriveEncKey(MASTER, encSalt, FAST); // default false
+    const wrappingKey = await deriveEncKey("123456", generateSalt(), FAST);
+    await expect(wrapKey(nonExtractable, wrappingKey)).rejects.toThrow();
   });
 });
 

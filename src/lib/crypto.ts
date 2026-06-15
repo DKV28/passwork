@@ -89,12 +89,18 @@ async function importPasswordKey(masterPassword: string): Promise<CryptoKey> {
 
 /**
  * Derive the AES-GCM encryption key from the master password + encSalt.
- * Marked non-extractable: it can encrypt/decrypt but cannot be read out of memory.
+ *
+ * By default the key is NON-extractable: it can encrypt/decrypt but cannot be
+ * read out of memory. The optional `extractable` flag (default false) is only
+ * set to true for the short-lived copy used during PIN setup, where the key
+ * must be wrapped (which internally exports it). That copy is discarded
+ * immediately after wrapping — the long-lived session key stays non-extractable.
  */
 export async function deriveEncKey(
   masterPassword: string,
   encSaltB64: string,
   iterations: number = DEFAULT_KDF_ITERATIONS,
+  extractable = false,
 ): Promise<CryptoKey> {
   const baseKey = await importPasswordKey(masterPassword);
   return subtle().deriveKey(
@@ -106,7 +112,47 @@ export async function deriveEncKey(
     },
     baseKey,
     { name: "AES-GCM", length: 256 },
-    false, // not extractable
+    extractable,
+    ["encrypt", "decrypt"],
+  );
+}
+
+// ---------------------------------------------------------------------------
+// key wrapping (used by the optional PIN unlock feature)
+// ---------------------------------------------------------------------------
+
+/**
+ * Wrap (encrypt) an extractable AES-GCM key with another AES-GCM "wrapping" key.
+ * Used to store a PIN-protected copy of the encryption key.
+ *
+ * We export the key to raw bytes and AES-GCM encrypt those bytes, rather than
+ * using SubtleCrypto.wrapKey — that keeps the wrapping key usable with the same
+ * ["encrypt","decrypt"] usages that {@link deriveEncKey} produces. The key being
+ * wrapped MUST be extractable, otherwise exportKey throws (by design).
+ */
+export async function wrapKey(keyToWrap: CryptoKey, wrappingKey: CryptoKey): Promise<Ciphertext> {
+  const raw = new Uint8Array(await subtle().exportKey("raw", keyToWrap));
+  const iv = generateIv();
+  const buf = await subtle().encrypt({ name: "AES-GCM", iv: asBuffer(iv) }, wrappingKey, asBuffer(raw));
+  return { cipher: bytesToBase64(new Uint8Array(buf)), iv: bytesToBase64(iv) };
+}
+
+/**
+ * Unwrap a key previously produced by {@link wrapKey}. Throws (GCM auth failure)
+ * if the wrapping key is wrong — e.g. the PIN was incorrect. The recovered key
+ * is NON-extractable: it can only encrypt/decrypt, never be re-exported.
+ */
+export async function unwrapKey(wrapped: Ciphertext, wrappingKey: CryptoKey): Promise<CryptoKey> {
+  const rawBuf = await subtle().decrypt(
+    { name: "AES-GCM", iv: asBuffer(base64ToBytes(wrapped.iv)) },
+    wrappingKey,
+    asBuffer(base64ToBytes(wrapped.cipher)),
+  );
+  return subtle().importKey(
+    "raw",
+    rawBuf,
+    { name: "AES-GCM", length: 256 },
+    false, // recovered key is non-extractable
     ["encrypt", "decrypt"],
   );
 }

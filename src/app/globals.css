@@ -4,32 +4,62 @@
 
 :root {
   color-scheme: light;
+  --bg: #f8fafc; /* slate-50 */
+  --surface: #ffffff;
+  --surface-muted: #f1f5f9; /* slate-100 */
+  --border: #e2e8f0; /* slate-200 */
+  --text: #0f172a; /* slate-900 */
+  --text-muted: #64748b; /* slate-500 */
+}
+
+.dark {
+  color-scheme: dark;
+  --bg: #0f172a; /* slate-900 */
+  --surface: #1e293b; /* slate-800 */
+  --surface-muted: #334155; /* slate-700 */
+  --border: #334155; /* slate-700 */
+  --text: #f1f5f9; /* slate-100 */
+  --text-muted: #94a3b8; /* slate-400 */
 }
 
 body {
-  @apply bg-slate-50 text-slate-900 antialiased;
+  background-color: var(--bg);
+  color: var(--text);
+  @apply antialiased;
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex items-center justify-center gap-2 rounded-lg px-4 py-2 text-sm font-medium transition-colors duration-150 disabled:cursor-not-allowed disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-brand text-white hover:bg-brand-dark;
   }
   .btn-secondary {
-    @apply btn border border-slate-300 bg-white text-slate-700 hover:bg-slate-100;
+    @apply btn border;
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
+  }
+  .btn-secondary:hover {
+    background-color: var(--surface-muted);
   }
   .btn-danger {
-    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50;
+    @apply btn border border-red-200 bg-white text-red-600 hover:bg-red-50 dark:border-red-900/50 dark:bg-transparent dark:text-red-400 dark:hover:bg-red-950/40;
   }
   .input {
-    @apply w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm shadow-sm outline-none focus:border-brand focus:ring-2 focus:ring-brand/30;
+    @apply w-full rounded-lg border px-3 py-2 text-sm shadow-sm outline-none transition-colors duration-150 focus:border-brand focus:ring-2 focus:ring-brand/30;
+    background-color: var(--surface);
+    border-color: var(--border);
+    color: var(--text);
   }
   .label {
-    @apply mb-1 block text-sm font-medium text-slate-700;
+    @apply mb-1 block text-sm font-medium;
+    color: var(--text-muted);
   }
   .card {
-    @apply rounded-xl border border-slate-200 bg-white p-5 shadow-sm;
+    @apply rounded-xl border p-5 shadow-sm;
+    background-color: var(--surface);
+    border-color: var(--border);
   }
 }

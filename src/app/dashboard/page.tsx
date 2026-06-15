@@ -5,6 +5,7 @@ import Link from "next/link";
 import { AppHeader } from "@/components/AppHeader";
 import { DueReminders } from "@/components/DueReminders";
 import { EntryList } from "@/components/EntryList";
+import { PinManager } from "@/components/PinManager";
 import { useUnlockGuard } from "@/components/useUnlockGuard";
 import {
   apiListEntries,
@@ -19,6 +20,7 @@ export default function DashboardPage() {
   const [due, setDue] = useState<DueItemDTO[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
 
   const load = useCallback(async () => {
     try {
@@ -50,16 +52,28 @@ export default function DashboardPage() {
         {error && <p className="text-sm text-red-600">{error}</p>}
 
         {loading ? (
-          <p className="text-sm text-slate-500">Đang tải…</p>
+          <p className="text-sm text-[var(--text-muted)]">Đang tải…</p>
         ) : (
           <>
             <DueReminders items={due} onChanged={load} />
             <section className="space-y-3">
-              <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">
-                Tất cả ({entries.length})
-              </h2>
-              <EntryList entries={entries} />
+              <div className="flex flex-wrap items-center justify-between gap-2">
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">
+                  Tất cả ({entries.length})
+                </h2>
+                {entries.length > 0 && (
+                  <input
+                    type="search"
+                    className="input max-w-[16rem]"
+                    placeholder="Tìm kiếm…"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                )}
+              </div>
+              <EntryList entries={entries} search={search} />
             </section>
+            <PinManager />
           </>
         )}
       </main>

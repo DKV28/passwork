@@ -3,11 +3,14 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useVault } from "@/components/VaultProvider";
+import { hasPinSetup } from "@/lib/pin";
 
 /**
- * Redirects to /unlock when the vault is locked (e.g. after a page reload, where
- * the in-memory encryption key is gone). Returns whether the vault is unlocked
- * so callers can avoid rendering protected content during the redirect.
+ * Redirects when the vault is locked (e.g. after a page reload, where the
+ * in-memory encryption key is gone). If a PIN has been set up on this device we
+ * send the user to the fast /pin unlock; otherwise to the full /unlock page.
+ * Returns whether the vault is unlocked so callers can avoid rendering protected
+ * content during the redirect.
  */
 export function useUnlockGuard(): boolean {
   const router = useRouter();
@@ -15,8 +18,8 @@ export function useUnlockGuard(): boolean {
 
   useEffect(() => {
     if (!isUnlocked) {
-      const next = window.location.pathname;
-      router.replace(`/unlock?next=${encodeURIComponent(next)}`);
+      const next = encodeURIComponent(window.location.pathname);
+      router.replace(hasPinSetup() ? `/pin?next=${next}` : `/unlock?next=${next}`);
     }
   }, [isUnlocked, router]);
 

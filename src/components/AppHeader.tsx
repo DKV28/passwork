@@ -3,20 +3,31 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useVault } from "@/components/VaultProvider";
+import { useTheme } from "@/components/ThemeProvider";
 import { apiLogout } from "@/lib/api";
+import { hasPinSetup } from "@/lib/pin";
 
 export function AppHeader({ dueCount }: { dueCount?: number }) {
   const router = useRouter();
-  const { email, lock } = useVault();
+  const { email, lock, logout } = useVault();
+  const { theme, toggleTheme } = useTheme();
 
-  async function onLock() {
+  // Quick lock: keep the session cookie and the PIN so the user can come back
+  // with just the PIN. Falls back to /unlock when no PIN is set.
+  function onLock() {
     lock();
+    router.push(hasPinSetup() ? "/pin" : "/unlock");
+  }
+
+  // Full sign-out: erase the PIN and destroy the server session.
+  async function onLogout() {
+    logout();
     await apiLogout().catch(() => {});
     router.push("/unlock");
   }
 
   return (
-    <header className="border-b border-slate-200 bg-white">
+    <header className="border-b border-[var(--border)] bg-[var(--surface)]">
       <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
         <Link href="/dashboard" className="flex items-center gap-2 font-bold">
           <span>🔐 Passwork</span>
@@ -26,9 +37,15 @@ export function AppHeader({ dueCount }: { dueCount?: number }) {
             </span>
           ) : null}
         </Link>
-        <div className="flex items-center gap-3 text-sm">
-          {email && <span className="hidden text-slate-500 sm:inline">{email}</span>}
+        <div className="flex items-center gap-2 text-sm">
+          {email && (
+            <span className="mr-1 hidden text-[var(--text-muted)] sm:inline">{email}</span>
+          )}
+          <button onClick={toggleTheme} className="btn-secondary" title="Đổi giao diện sáng/tối">
+            {theme === "dark" ? "Sáng" : "Tối"}
+          </button>
           <button onClick={onLock} className="btn-secondary">Khóa</button>
+          <button onClick={onLogout} className="btn-secondary">Đăng xuất</button>
         </div>
       </div>
     </header>

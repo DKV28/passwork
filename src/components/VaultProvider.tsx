@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState } from "react";
+import { clearPin } from "@/lib/pin";
 
 /**
  * Holds the AES-GCM encryption key in memory for the duration of an unlocked
@@ -15,7 +16,11 @@ interface VaultState {
   email: string | null;
   isUnlocked: boolean;
   unlock: (encKey: CryptoKey, email: string) => void;
+  /** Drop the in-memory key (auto-lock / quick lock). PIN data is kept so the
+   *  vault can be re-opened with the PIN. */
   lock: () => void;
+  /** Full sign-out: drop the key AND erase the PIN blob from this device. */
+  logout: () => void;
 }
 
 const VaultContext = createContext<VaultState | null>(null);
@@ -26,6 +31,12 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const lock = useCallback(() => {
+    setEncKey(null);
+    setEmail(null);
+  }, []);
+
+  const logout = useCallback(() => {
+    clearPin();
     setEncKey(null);
     setEmail(null);
   }, []);
@@ -57,7 +68,7 @@ export function VaultProvider({ children }: { children: React.ReactNode }) {
   }, [encKey, resetTimer]);
 
   return (
-    <VaultContext.Provider value={{ encKey, email, isUnlocked: Boolean(encKey), unlock, lock }}>
+    <VaultContext.Provider value={{ encKey, email, isUnlocked: Boolean(encKey), unlock, lock, logout }}>
       {children}
     </VaultContext.Provider>
   );

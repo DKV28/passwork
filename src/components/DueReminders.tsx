@@ -40,12 +40,12 @@ export function DueReminders({
 
   return (
     <section className="space-y-3">
-      <h2 className="text-sm font-semibold uppercase tracking-wide text-slate-500">Cần xem lại</h2>
+      <h2 className="text-sm font-semibold uppercase tracking-wide text-[var(--text-muted)]">Cần xem lại</h2>
       {items.map((item) => (
         <div key={item.id} className="card border-amber-200 bg-amber-50">
           <div className="flex flex-wrap items-start justify-between gap-3">
             <div>
-              <Link href={`/entries/${item.id}`} className="font-semibold text-slate-900 hover:underline">
+              <Link href={`/entries/${item.id}`} className="font-semibold text-[var(--text)] hover:underline">
                 {item.label}
               </Link>
               <p className="text-sm text-amber-800">{reasonLabel[item.reason]}</p>
