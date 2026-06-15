@@ -10,12 +10,9 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "db:push": "prisma db push",
-    "db:deploy": "node scripts/db-push-turso.mjs",
     "db:generate": "prisma generate"
   },
   "dependencies": {
-    "@libsql/client": "^0.17.3",
-    "@prisma/adapter-libsql": "^6.19.3",
     "@prisma/client": "^6.2.1",
     "next": "^16.2.9",
     "react": "^19.0.0",

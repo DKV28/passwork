@@ -23,43 +23,33 @@ mã hóa/giải mã diễn ra trong trình duyệt:
 
 ## Công nghệ
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS · Prisma + libSQL/Turso
-(file SQLite khi dev) · Web Crypto API · argon2.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS · Prisma + Postgres
+(Supabase) · Web Crypto API.
 
 ## Chạy thử (local)
 
 ```bash
 npm install
-cp .env.example .env          # điền SESSION_SECRET (xem hướng dẫn trong file)
-npx prisma db push            # tạo file SQLite prisma/dev.db
+cp .env.example .env          # điền DATABASE_URL (Postgres) + SESSION_SECRET
+npx prisma db push            # tạo bảng trong database
 npm run dev                   # mở http://localhost:3000
 ```
 
 Build production: `npm run build && npm run start`.
 
-## Triển khai lên Vercel + Turso
+## Triển khai lên Vercel + Supabase
 
-SQLite dạng file **không chạy được trên Vercel** (filesystem chỉ đọc, không lưu
-được dữ liệu). App dùng driver adapter libSQL nên ở production ta trỏ tới
-[Turso](https://turso.tech) (SQLite-compatible, có gói miễn phí):
+1. Tạo project tại [Supabase](https://supabase.com).
+2. Vào **SQL Editor**, dán toàn bộ DDL trong `prisma/schema.prisma` (hoặc lấy bằng
+   `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script`)
+   rồi bấm **Run** để tạo 3 bảng. (Không cần CLI.)
+3. Vào **Settings → Database → Connection string**, copy chuỗi **Transaction pooler
+   (cổng 6543)** — giữ tham số `?pgbouncer=true` để hợp với serverless.
+4. Trong Vercel → Project → Settings → Environment Variables, đặt:
+   `DATABASE_URL` (chuỗi pooler ở bước 3) và `SESSION_SECRET` (chuỗi ngẫu nhiên dài).
+5. **Redeploy**. Đăng ký/đăng nhập sẽ hoạt động.
 
-1. Tạo database Turso và lấy thông tin kết nối:
-   ```bash
-   turso db create passwork
-   turso db show passwork --url            # -> TURSO_DATABASE_URL (libsql://…)
-   turso db tokens create passwork         # -> TURSO_AUTH_TOKEN
-   ```
-2. Đặt `TURSO_DATABASE_URL` và `TURSO_AUTH_TOKEN` vào file `.env`, rồi **áp schema
-   lên Turso bằng một lệnh** (không cần Turso CLI cho bước này):
-   ```bash
-   npm run db:deploy
-   ```
-   Lệnh này an toàn khi chạy lại (bỏ qua bảng đã tồn tại). **Bắt buộc** chạy bước
-   này — thiếu nó, đăng ký/đăng nhập trên production sẽ báo lỗi 500 (chưa có bảng).
-3. Trong Vercel → Project → Settings → Environment Variables, đặt:
-   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_SECRET`.
-4. Deploy. Khi không có `TURSO_DATABASE_URL`, app tự dùng file SQLite local nên
-   môi trường dev không cần Turso.
+> Thiếu schema (bước 2) hoặc thiếu env (bước 4) sẽ gây lỗi 500 khi đăng ký.
 
 ## Kiểm thử
 
