@@ -67,19 +67,28 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
   async function handleCopy(e: VaultEntryDTO) {
     if (!encKey) return;
     setRowError((prev) => { const n = { ...prev }; delete n[e.id]; return n; });
-    try {
-      // Decrypt first (async) and store so user can copy manually if clipboard fails.
-      const plain = revealed[e.id] ?? (await decrypt(e.passwordCipher, e.passwordIv, encKey));
-      if (!revealed[e.id]) setRevealed((prev) => ({ ...prev, [e.id]: plain }));
 
-      // Attempt clipboard copy. On iOS the gesture context is already lost after
-      // the await above, so we try both APIs and silently reveal on failure.
+    // If already decrypted, copy synchronously — no await before clipboard write,
+    // so iOS Safari's user-gesture requirement is satisfied.
+    if (revealed[e.id]) {
+      const plain = revealed[e.id];
       let clipOk = false;
+      // Try execCommand first (synchronous, works on iOS when called directly from gesture)
       try {
-        await copyToClipboard(plain);
-        clipOk = true;
-      } catch {
-        // clipboard failed — password is now revealed so user can copy manually
+        const ta = document.createElement("textarea");
+        ta.value = plain;
+        ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+        document.body.appendChild(ta);
+        ta.focus();
+        ta.select();
+        clipOk = document.execCommand("copy");
+        document.body.removeChild(ta);
+      } catch { /* ignore */ }
+      // Also fire modern API best-effort (works on desktop)
+      if (!clipOk) {
+        try { await navigator.clipboard.writeText(plain); clipOk = true; } catch { /* ignore */ }
+      } else {
+        navigator.clipboard?.writeText(plain).catch(() => {});
       }
 
       if (clipOk) {
@@ -89,10 +98,18 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
           () => setCopied((prev) => ({ ...prev, [e.id]: false })),
           2_000,
         );
-        setTimeout(() => { copyToClipboard("").catch(() => {}); }, CLIPBOARD_CLEAR_MS);
+        setTimeout(() => { navigator.clipboard?.writeText("").catch(() => {}); }, CLIPBOARD_CLEAR_MS);
       } else {
-        setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được tự động — mật khẩu đã hiện, hãy sao chép thủ công." }));
+        setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được — hãy giữ và chọn mật khẩu bên dưới." }));
       }
+      return;
+    }
+
+    // Not yet decrypted — decrypt async, reveal, then prompt to tap again.
+    try {
+      const plain = await decrypt(e.passwordCipher, e.passwordIv, encKey);
+      setRevealed((prev) => ({ ...prev, [e.id]: plain }));
+      setRowError((prev) => ({ ...prev, [e.id]: "Nhấn 'Sao chép' lần nữa." }));
     } catch {
       setRowError((prev) => ({ ...prev, [e.id]: "Không giải mã được." }));
     }
