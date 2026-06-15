@@ -9,6 +9,28 @@ import { ageLabel } from "@/lib/format";
 
 const CLIPBOARD_CLEAR_MS = 30_000;
 
+// Tries the modern Clipboard API first; falls back to the legacy execCommand
+// approach for browsers/webviews where clipboard permission is unavailable.
+async function copyToClipboard(text: string): Promise<void> {
+  if (navigator.clipboard && typeof navigator.clipboard.writeText === "function") {
+    try {
+      await navigator.clipboard.writeText(text);
+      return;
+    } catch {
+      // fall through to legacy approach
+    }
+  }
+  const ta = document.createElement("textarea");
+  ta.value = text;
+  ta.style.cssText = "position:fixed;top:-9999px;left:-9999px;opacity:0";
+  document.body.appendChild(ta);
+  ta.focus();
+  ta.select();
+  const ok = document.execCommand("copy");
+  document.body.removeChild(ta);
+  if (!ok) throw new Error("execCommand copy failed");
+}
+
 export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; search?: string }) {
   const { encKey } = useVault();
   // entryId -> decrypted password (lazy; only present while revealed)
@@ -46,7 +68,7 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
     if (!encKey) return;
     try {
       const plain = revealed[e.id] ?? (await decrypt(e.passwordCipher, e.passwordIv, encKey));
-      await navigator.clipboard.writeText(plain);
+      await copyToClipboard(plain);
 
       setCopied((prev) => ({ ...prev, [e.id]: true }));
       if (copyTimers.current[e.id]) clearTimeout(copyTimers.current[e.id]);
@@ -55,10 +77,9 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
         2_000,
       );
 
-      // Best-effort: wipe the clipboard after a while. May silently fail if the
-      // tab is not focused — that's acceptable for a convenience feature.
+      // Best-effort: wipe the clipboard after a while.
       setTimeout(() => {
-        navigator.clipboard.writeText("").catch(() => {});
+        copyToClipboard("").catch(() => {});
       }, CLIPBOARD_CLEAR_MS);
     } catch {
       setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được. Hãy sao chép thủ công." }));
