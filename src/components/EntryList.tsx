@@ -66,23 +66,35 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
 
   async function handleCopy(e: VaultEntryDTO) {
     if (!encKey) return;
+    setRowError((prev) => { const n = { ...prev }; delete n[e.id]; return n; });
     try {
+      // Decrypt first (async) and store so user can copy manually if clipboard fails.
       const plain = revealed[e.id] ?? (await decrypt(e.passwordCipher, e.passwordIv, encKey));
-      await copyToClipboard(plain);
+      if (!revealed[e.id]) setRevealed((prev) => ({ ...prev, [e.id]: plain }));
 
-      setCopied((prev) => ({ ...prev, [e.id]: true }));
-      if (copyTimers.current[e.id]) clearTimeout(copyTimers.current[e.id]);
-      copyTimers.current[e.id] = setTimeout(
-        () => setCopied((prev) => ({ ...prev, [e.id]: false })),
-        2_000,
-      );
+      // Attempt clipboard copy. On iOS the gesture context is already lost after
+      // the await above, so we try both APIs and silently reveal on failure.
+      let clipOk = false;
+      try {
+        await copyToClipboard(plain);
+        clipOk = true;
+      } catch {
+        // clipboard failed — password is now revealed so user can copy manually
+      }
 
-      // Best-effort: wipe the clipboard after a while.
-      setTimeout(() => {
-        copyToClipboard("").catch(() => {});
-      }, CLIPBOARD_CLEAR_MS);
+      if (clipOk) {
+        setCopied((prev) => ({ ...prev, [e.id]: true }));
+        if (copyTimers.current[e.id]) clearTimeout(copyTimers.current[e.id]);
+        copyTimers.current[e.id] = setTimeout(
+          () => setCopied((prev) => ({ ...prev, [e.id]: false })),
+          2_000,
+        );
+        setTimeout(() => { copyToClipboard("").catch(() => {}); }, CLIPBOARD_CLEAR_MS);
+      } else {
+        setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được tự động — mật khẩu đã hiện, hãy sao chép thủ công." }));
+      }
     } catch {
-      setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được. Hãy sao chép thủ công." }));
+      setRowError((prev) => ({ ...prev, [e.id]: "Không giải mã được." }));
     }
   }
 
