@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useVault } from "@/components/VaultProvider";
+import { PinSetupPrompt } from "@/components/PinSetupPrompt";
 import {
   generateSalt,
   deriveEncKey,
@@ -20,6 +21,9 @@ export default function SignupPage() {
   const [confirm, setConfirm] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [offerPin, setOfferPin] = useState(false);
+
+  const creds = useRef<{ mail: string; pw: string; encSalt: string; iterations: number } | null>(null);
 
   async function onSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -32,6 +36,7 @@ export default function SignupPage() {
       const authSalt = generateSalt();
       const encSalt = generateSalt();
       const iterations = DEFAULT_KDF_ITERATIONS;
+      const mail = email.trim().toLowerCase();
 
       // Derive locally — the master password never leaves this device.
       const [authHash, encKey] = await Promise.all([
@@ -40,25 +45,43 @@ export default function SignupPage() {
       ]);
 
       await apiSignup({
-        email: email.trim().toLowerCase(),
+        email: mail,
         authSalt,
         encSalt,
         authHash,
         kdfIterations: iterations,
       });
 
-      unlock(encKey, email.trim().toLowerCase());
-      router.push("/dashboard");
+      unlock(encKey, mail);
+      creds.current = { mail, pw, encSalt, iterations };
+      setOfferPin(true);
+      setBusy(false);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Đăng ký thất bại.");
       setBusy(false);
     }
   }
 
+  if (offerPin && creds.current) {
+    const c = creds.current;
+    return (
+      <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
+        <h1 className="mb-1 text-2xl font-bold">Tạo kho thành công 🔐</h1>
+        <p className="mb-6 text-sm text-[var(--text-muted)]">Thiết lập PIN để lần sau mở khóa nhanh hơn.</p>
+        <PinSetupPrompt
+          email={c.mail}
+          deriveExtractableKey={() => deriveEncKey(c.pw, c.encSalt, c.iterations, true)}
+          onDone={() => router.push("/dashboard")}
+          onSkip={() => router.push("/dashboard")}
+        />
+      </main>
+    );
+  }
+
   return (
     <main className="mx-auto flex min-h-screen max-w-md flex-col justify-center px-4 py-10">
       <h1 className="mb-1 text-2xl font-bold">Tạo kho mật khẩu 🔐</h1>
-      <p className="mb-6 text-sm text-slate-600">
+      <p className="mb-6 text-sm text-[var(--text-muted)]">
         Đặt một <strong>master password</strong> — đây là chìa khóa giải mã toàn bộ kho.
       </p>
 
@@ -91,7 +114,7 @@ export default function SignupPage() {
         </button>
       </form>
 
-      <p className="mt-4 text-center text-sm text-slate-600">
+      <p className="mt-4 text-center text-sm text-[var(--text-muted)]">
         Đã có kho? <Link href="/unlock" className="font-medium text-brand">Mở khóa</Link>
       </p>
     </main>

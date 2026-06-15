@@ -60,11 +60,11 @@ export default function HistoryPage({ params }: { params: Promise<{ id: string }
         <h1 className="mb-4 mt-2 text-xl font-bold">Lịch sử mật khẩu — {label}</h1>
 
         {loading ? (
-          <p className="text-sm text-slate-500">Đang giải mã…</p>
+          <p className="text-sm text-[var(--text-muted)]">Đang giải mã…</p>
         ) : error ? (
           <p className="text-sm text-red-600">{error}</p>
         ) : rows.length === 0 ? (
-          <div className="card text-sm text-slate-600">
+          <div className="card text-sm text-[var(--text-muted)]">
             Chưa có mật khẩu cũ nào. Khi bạn đổi mật khẩu, giá trị cũ sẽ xuất hiện ở đây.
           </div>
         ) : (
@@ -72,7 +72,7 @@ export default function HistoryPage({ params }: { params: Promise<{ id: string }
             {rows.map((r) => (
               <li key={r.id} className="card flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <p className="text-xs text-slate-500">Đổi ngày {formatDate(r.changedAt)}</p>
+                  <p className="text-xs text-[var(--text-muted)]">Đổi ngày {formatDate(r.changedAt)}</p>
                   <p className="truncate font-mono text-sm">
                     {revealed[r.id] ? r.password : "••••••••••"}
                   </p>

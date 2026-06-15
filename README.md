@@ -40,16 +40,19 @@ Build production: `npm run build && npm run start`.
 ## Triển khai lên Vercel + Supabase
 
 1. Tạo project tại [Supabase](https://supabase.com).
-2. Vào **SQL Editor**, dán toàn bộ DDL trong `prisma/schema.prisma` (hoặc lấy bằng
-   `npx prisma migrate diff --from-empty --to-schema-datamodel prisma/schema.prisma --script`)
-   rồi bấm **Run** để tạo 3 bảng. (Không cần CLI.)
+2. Vào **SQL Editor**, mở file [`prisma/schema.sql`](prisma/schema.sql), copy **toàn bộ**
+   nội dung, dán vào rồi bấm **Run** để tạo cả 3 bảng (`User`, `VaultEntry`,
+   `PasswordHistory`). File này an toàn chạy lại nhiều lần, nên nếu trước đó bạn mới
+   tạo được bảng `User` thì chạy lại sẽ bổ sung 2 bảng còn thiếu. (Không cần CLI.)
 3. Vào **Settings → Database → Connection string**, copy chuỗi **Transaction pooler
    (cổng 6543)** — giữ tham số `?pgbouncer=true` để hợp với serverless.
 4. Trong Vercel → Project → Settings → Environment Variables, đặt:
    `DATABASE_URL` (chuỗi pooler ở bước 3) và `SESSION_SECRET` (chuỗi ngẫu nhiên dài).
 5. **Redeploy**. Đăng ký/đăng nhập sẽ hoạt động.
 
-> Thiếu schema (bước 2) hoặc thiếu env (bước 4) sẽ gây lỗi 500 khi đăng ký.
+> Thiếu schema (bước 2) hoặc thiếu env (bước 4) sẽ gây lỗi 500. Lưu ý: nếu đăng
+> nhập được nhưng **lưu mục bị 500**, gần như chắc chắn bảng `VaultEntry` chưa được
+> tạo — hãy chạy lại `prisma/schema.sql` ở bước 2.
 
 ## Kiểm thử
 

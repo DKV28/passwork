@@ -7,7 +7,7 @@ import { SESSION_COOKIE_NAME } from "@/lib/sessionConstants";
  * server-side in each page/route handler via getSessionUserId(), which is where
  * real authorization happens.
  */
-const PROTECTED_PREFIXES = ["/dashboard", "/entries"];
+const PROTECTED_PREFIXES = ["/dashboard", "/entries", "/pin"];
 
 export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -27,5 +27,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/entries/:path*"],
+  matcher: ["/dashboard/:path*", "/entries/:path*", "/pin"],
 };
