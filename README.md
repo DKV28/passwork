@@ -23,18 +23,42 @@ mã hóa/giải mã diễn ra trong trình duyệt:
 
 ## Công nghệ
 
-Next.js 16 (App Router) · TypeScript · Tailwind CSS · Prisma + SQLite · Web Crypto API · argon2.
+Next.js 16 (App Router) · TypeScript · Tailwind CSS · Prisma + libSQL/Turso
+(file SQLite khi dev) · Web Crypto API · argon2.
 
-## Chạy thử
+## Chạy thử (local)
 
 ```bash
 npm install
-cp .env.example .env          # rồi điền SESSION_SECRET (xem hướng dẫn trong file)
-npx prisma db push            # tạo file SQLite dev.db
+cp .env.example .env          # điền SESSION_SECRET (xem hướng dẫn trong file)
+npx prisma db push            # tạo file SQLite prisma/dev.db
 npm run dev                   # mở http://localhost:3000
 ```
 
 Build production: `npm run build && npm run start`.
+
+## Triển khai lên Vercel + Turso
+
+SQLite dạng file **không chạy được trên Vercel** (filesystem chỉ đọc, không lưu
+được dữ liệu). App dùng driver adapter libSQL nên ở production ta trỏ tới
+[Turso](https://turso.tech) (SQLite-compatible, có gói miễn phí):
+
+1. Tạo database Turso và lấy thông tin kết nối:
+   ```bash
+   turso db create passwork
+   turso db show passwork --url            # -> TURSO_DATABASE_URL (libsql://…)
+   turso db tokens create passwork         # -> TURSO_AUTH_TOKEN
+   ```
+2. Áp schema lên Turso (Prisma sinh SQL từ schema, rồi chạy bằng Turso shell):
+   ```bash
+   npx prisma migrate diff --from-empty \
+     --to-schema-datamodel prisma/schema.prisma --script > schema.sql
+   turso db shell passwork < schema.sql
+   ```
+3. Trong Vercel → Project → Settings → Environment Variables, đặt:
+   `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_SECRET`.
+4. Deploy. Khi không có `TURSO_DATABASE_URL`, app tự dùng file SQLite local nên
+   môi trường dev không cần Turso.
 
 ## Kiểm thử
 
