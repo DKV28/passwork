@@ -5,8 +5,9 @@
  */
 import crypto from "node:crypto";
 import { cookies } from "next/headers";
+import { SESSION_COOKIE_NAME } from "@/lib/sessionConstants";
 
-const COOKIE_NAME = "passwork_session";
+const COOKIE_NAME = SESSION_COOKIE_NAME;
 const MAX_AGE_SECONDS = 60 * 60 * 24 * 7; // 7 days
 
 function getSecret(): string {

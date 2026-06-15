@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
-import { COOKIE_NAME } from "@/lib/session";
+import { SESSION_COOKIE_NAME } from "@/lib/sessionConstants";
 
 /**
  * Lightweight gate: redirects users without a session cookie away from
@@ -16,7 +16,7 @@ export function middleware(request: NextRequest) {
   );
   if (!isProtected) return NextResponse.next();
 
-  const hasCookie = Boolean(request.cookies.get(COOKIE_NAME)?.value);
+  const hasCookie = Boolean(request.cookies.get(SESSION_COOKIE_NAME)?.value);
   if (!hasCookie) {
     const url = request.nextUrl.clone();
     url.pathname = "/unlock";
