@@ -9,7 +9,7 @@ import { SESSION_COOKIE_NAME } from "@/lib/sessionConstants";
  */
 const PROTECTED_PREFIXES = ["/dashboard", "/entries", "/pin"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProtected = PROTECTED_PREFIXES.some(
     (p) => pathname === p || pathname.startsWith(`${p}/`),
