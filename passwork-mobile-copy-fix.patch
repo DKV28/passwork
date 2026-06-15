@@ -1,0 +1,66 @@
+diff --git a/src/components/EntryList.tsx b/src/components/EntryList.tsx
+--- a/src/components/EntryList.tsx
++++ b/src/components/EntryList.tsx
+@@
+ const CLIPBOARD_CLEAR_MS = 30_000;
+ 
++async function copyText(text: string) {
++  try {
++    if (window.isSecureContext && navigator.clipboard?.writeText) {
++      await navigator.clipboard.writeText(text);
++      return;
++    }
++  } catch {
++    // Fall back to the selection-based copy path below.
++  }
++
++  const textArea = document.createElement("textarea");
++  textArea.value = text;
++  textArea.readOnly = true;
++  textArea.setAttribute("aria-hidden", "true");
++  textArea.style.position = "fixed";
++  textArea.style.top = "0";
++  textArea.style.left = "-9999px";
++  textArea.style.opacity = "0";
++  textArea.style.fontSize = "16px";
++
++  document.body.appendChild(textArea);
++  textArea.focus();
++  textArea.select();
++  textArea.setSelectionRange(0, text.length);
++
++  const copied = document.execCommand("copy");
++  document.body.removeChild(textArea);
++
++  if (!copied) {
++    throw new Error("Unable to copy text");
++  }
++}
++
++function clearClipboardSoon() {
++  if (!window.isSecureContext || !navigator.clipboard?.writeText) return;
++
++  setTimeout(() => {
++    navigator.clipboard.writeText("").catch(() => {});
++  }, CLIPBOARD_CLEAR_MS);
++}
++
+ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; search?: string }) {
+@@
+     if (!encKey) return;
+     try {
+       const plain = revealed[e.id] ?? (await decrypt(e.passwordCipher, e.passwordIv, encKey));
+-      await navigator.clipboard.writeText(plain);
++      await copyText(plain);
+ 
+       setCopied((prev) => ({ ...prev, [e.id]: true }));
+@@
+       // Best-effort: wipe the clipboard after a while. May silently fail if the
+       // tab is not focused — that's acceptable for a convenience feature.
+-      setTimeout(() => {
+-        navigator.clipboard.writeText("").catch(() => {});
+-      }, CLIPBOARD_CLEAR_MS);
++      clearClipboardSoon();
+     } catch {
+       setRowError((prev) => ({ ...prev, [e.id]: "Không sao chép được. Hãy sao chép thủ công." }));
+     }
