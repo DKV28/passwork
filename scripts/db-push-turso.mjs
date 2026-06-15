@@ -11,9 +11,11 @@ import { execSync } from "node:child_process";
 import { createClient } from "@libsql/client";
 import fs from "node:fs";
 
-// Load .env if present (so the script works without extra tooling).
-if (fs.existsSync(".env")) {
-  for (const line of fs.readFileSync(".env", "utf8").split("\n")) {
+// Load env from .env (preferred) then .env.example (fallback) so the script
+// works with whichever holds your Turso credentials.
+for (const file of [".env", ".env.example"]) {
+  if (!fs.existsSync(file)) continue;
+  for (const line of fs.readFileSync(file, "utf8").split("\n")) {
     const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*"?([^"]*)"?\s*$/);
     if (m && !process.env[m[1]]) process.env[m[1]] = m[2];
   }
