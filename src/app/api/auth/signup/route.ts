@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import argon2 from "argon2";
 import { prisma } from "@/lib/db";
 import { createSession } from "@/lib/session";
+import { hashVerifier } from "@/lib/verifier";
 
 /**
  * Create an account. The browser has already generated the salts and derived
@@ -29,17 +29,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
-    return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+  try {
+    const existing = await prisma.user.findUnique({ where: { email } });
+    if (existing) {
+      return NextResponse.json({ error: "An account with this email already exists" }, { status: 409 });
+    }
+
+    const serverHash = hashVerifier(authHash);
+
+    const user = await prisma.user.create({
+      data: { email, authSalt, encSalt, serverHash, kdfIterations },
+    });
+
+    await createSession(user.id);
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    console.error("[signup] failed:", err);
+    return NextResponse.json(
+      { error: "Server error. Kiểm tra cấu hình database (Turso) và đã áp schema chưa." },
+      { status: 500 },
+    );
   }
-
-  const serverHash = await argon2.hash(authHash, { type: argon2.argon2id });
-
-  const user = await prisma.user.create({
-    data: { email, authSalt, encSalt, serverHash, kdfIterations },
-  });
-
-  await createSession(user.id);
-  return NextResponse.json({ ok: true });
 }

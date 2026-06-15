@@ -49,12 +49,13 @@ SQLite dạng file **không chạy được trên Vercel** (filesystem chỉ đ�
    turso db show passwork --url            # -> TURSO_DATABASE_URL (libsql://…)
    turso db tokens create passwork         # -> TURSO_AUTH_TOKEN
    ```
-2. Áp schema lên Turso (Prisma sinh SQL từ schema, rồi chạy bằng Turso shell):
+2. Đặt `TURSO_DATABASE_URL` và `TURSO_AUTH_TOKEN` vào file `.env`, rồi **áp schema
+   lên Turso bằng một lệnh** (không cần Turso CLI cho bước này):
    ```bash
-   npx prisma migrate diff --from-empty \
-     --to-schema-datamodel prisma/schema.prisma --script > schema.sql
-   turso db shell passwork < schema.sql
+   npm run db:deploy
    ```
+   Lệnh này an toàn khi chạy lại (bỏ qua bảng đã tồn tại). **Bắt buộc** chạy bước
+   này — thiếu nó, đăng ký/đăng nhập trên production sẽ báo lỗi 500 (chưa có bảng).
 3. Trong Vercel → Project → Settings → Environment Variables, đặt:
    `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `SESSION_SECRET`.
 4. Deploy. Khi không có `TURSO_DATABASE_URL`, app tự dùng file SQLite local nên
