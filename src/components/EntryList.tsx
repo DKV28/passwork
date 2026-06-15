@@ -110,7 +110,7 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
   if (filtered.length === 0) {
     return (
       <div className="card text-center text-sm text-[var(--text-muted)]">
-        Không tìm thấy kết quả cho “{search}”.
+        Không tìm thấy kết quả cho "{search}".
       </div>
     );
   }
