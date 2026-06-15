@@ -156,13 +156,15 @@ export function EntryList({ entries, search = "" }: { entries: VaultEntryDTO[]; 
             >
               {revealed[e.id] ? "Ẩn" : "Hiện"}
             </button>
-            <button
-              type="button"
-              onClick={() => handleCopy(e)}
-              className="btn-secondary px-2.5 py-1 text-xs"
-            >
-              {copied[e.id] ? "Đã sao chép!" : "Sao chép"}
-            </button>
+            {revealed[e.id] && (
+              <button
+                type="button"
+                onClick={() => handleCopy(e)}
+                className="btn-secondary px-2.5 py-1 text-xs"
+              >
+                {copied[e.id] ? "Đã sao chép!" : "Sao chép"}
+              </button>
+            )}
           </div>
 
           <span className="shrink-0 text-xs text-[var(--text-muted)]">{ageLabel(e.lastChangedAt)}</span>
